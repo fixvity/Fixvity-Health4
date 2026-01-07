@@ -60,7 +60,11 @@ button{
 }
 button:hover{opacity:.95}
 
-.error{color:#dc2626;font-weight:600}
+.error{
+  color:#dc2626;
+  font-weight:600;
+  margin-top:10px;
+}
 
 table{
   width:100%;
@@ -96,7 +100,6 @@ td{
 <body>
 <div class="container">
 
-<!-- INPUT -->
 <div class="card">
 <h1>Body Fat Calculator</h1>
 <small>U.S. Navy Method · Medical-grade accuracy · US & Metric units</small>
@@ -129,11 +132,8 @@ td{
 
 <br>
 
-<!-- RESULTS -->
 <div class="grid">
-  <div class="card">
-    <div id="output">Result = —</div>
-  </div>
+  <div class="card"><div id="output">Result = —</div></div>
 
   <div class="card">
     <div class="chart-wrap">
@@ -150,29 +150,48 @@ td{
 let chart;
 
 function calculateBodyFat(){
-  const err=document.getElementById("error");
-  err.innerText="";
+  error.innerText="";
+  output.innerHTML="Result = —";
+  centerText.innerHTML="";
+  if(chart) chart.destroy();
 
-  const unit=document.getElementById("unit").value;
-  const gender=document.getElementById("gender").value;
-  const age=+ageEl.value;
-  let h=+height.value,w=+weight.value,n=+neck.value,wa=+waist.value,hi=+hip.value;
+  const unit=unitEl.value, gender=genderEl.value;
+  let age=+ageEl.value, h=+heightEl.value, w=+weightEl.value;
+  let n=+neckEl.value, wa=+waistEl.value, hi=+hipEl.value;
 
   if(!gender||!age||!h||!w||!n||!wa){
-    err.innerText="Please fill all required fields.";
+    error.innerText="Please fill all required fields.";
     return;
   }
-  if(unit==="us"){ h*=2.54; w*=0.453592; n*=2.54; wa*=2.54; hi*=2.54; }
-  if(gender==="female"&&!hi){ err.innerText="Hip required for females."; return; }
+
+  if(unit==="us"){
+    h*=2.54; w*=0.453592; n*=2.54; wa*=2.54; hi*=2.54;
+  }
+
+  if(gender==="male" && wa<=n){
+    error.innerText="For males, waist circumference must be greater than neck.";
+    return;
+  }
+
+  if(gender==="female"){
+    if(!hi){
+      error.innerText="Hip measurement is required for females.";
+      return;
+    }
+    if(wa+hi<=n){
+      error.innerText="For females, waist + hip must be greater than neck.";
+      return;
+    }
+  }
 
   let bf = gender==="male"
     ? 86.01*Math.log10(wa-n)-70.041*Math.log10(h)+36.76
     : 163.205*Math.log10(wa+hi-n)-97.684*Math.log10(h)-78.387;
 
   bf=Math.min(Math.max(bf,2),60);
-  const fat=w*(bf/100), lean=w-fat;
 
-  let cat=bf<6?"Essential":bf<14?"Athletes":bf<18?"Fitness":bf<25?"Average":"Obese";
+  const fat=w*(bf/100), lean=w-fat;
+  const category=bf<6?"Essential":bf<14?"Athletes":bf<18?"Fitness":bf<25?"Average":"Obese";
   const ideal=Math.max(8,18-(age-20)*0.2);
   const lose=Math.max(0,w*(bf-ideal)/100);
   const bmi=w/((h/100)**2);
@@ -181,7 +200,7 @@ function calculateBodyFat(){
   output.innerHTML=`
   <table>
     <tr><td><b>Body Fat</b></td><td>${bf.toFixed(1)}%</td></tr>
-    <tr><td>Category</td><td>${cat}</td></tr>
+    <tr><td>Category</td><td>${category}</td></tr>
     <tr><td>Fat Mass</td><td>${fat.toFixed(1)} kg</td></tr>
     <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
     <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
@@ -189,10 +208,9 @@ function calculateBodyFat(){
     <tr><td>BMI Method (ref)</td><td>${bmiBF.toFixed(1)}%</td></tr>
   </table>`;
 
-  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${cat}</span>`;
+  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${category}</span>`;
 
-  if(chart)chart.destroy();
-  chart=new Chart(chartEl,{
+  chart=new Chart(chartCtx,{
     type:"doughnut",
     data:{
       labels:["Fat Mass","Lean Mass"],
@@ -201,22 +219,17 @@ function calculateBodyFat(){
         backgroundColor:["#f87171","#4ade80"]
       }]
     },
-    options:{
-      cutout:"70%",
-      plugins:{legend:{position:"bottom"}}
-    }
+    options:{cutout:"70%",plugins:{legend:{position:"bottom"}}}
   });
 }
 
-const ageEl=document.getElementById("age"),
-height=document.getElementById("height"),
-weight=document.getElementById("weight"),
-neck=document.getElementById("neck"),
-waist=document.getElementById("waist"),
-hip=document.getElementById("hip"),
+const unitEl=unit, genderEl=gender, ageEl=age,
+heightEl=height, weightEl=weight, neckEl=neck,
+waistEl=waist, hipEl=hip,
 output=document.getElementById("output"),
 centerText=document.getElementById("centerText"),
-chartEl=document.getElementById("chart").getContext("2d");
+error=document.getElementById("error"),
+chartCtx=document.getElementById("chart").getContext("2d");
 </script>
 
 </body>
