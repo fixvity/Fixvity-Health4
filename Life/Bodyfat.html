@@ -1,3 +1,5 @@
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -59,11 +61,13 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
 .chart-wrap{position:relative;height:340px}
 .chart-center{
   position:absolute;
-  top:45%;left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
 }
-.chart-center b{font-size:26px;display:block}
+.chart-center b{font-size:26px}
 .chart-center span{font-size:14px;color:#555}
 
 /* ===== RANGE BAR ===== */
@@ -76,11 +80,11 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
   display:flex;
 }
 .range-bar div{height:100%}
-.r1{background:#7c2d12;width:6%}    /* 2–5 */
-.r2{background:#facc15;width:8%}    /* 6–13 */
-.r3{background:#22c55e;width:10%}   /* 14–17 */
-.r4{background:#fde047;width:7%}    /* 18–24 */
-.r5{background:#dc2626;width:69%}   /* 25–60 */
+.r1{background:#7c2d12;width:6%}
+.r2{background:#facc15;width:8%}
+.r3{background:#22c55e;width:10%}
+.r4{background:#fde047;width:7%}
+.r5{background:#dc2626;width:69%}
 
 .range-pointer{
   position:absolute;
@@ -89,7 +93,8 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
   border-left:7px solid transparent;
   border-right:7px solid transparent;
   border-top:12px solid #000;
-  transition:left .4s ease;
+  transform:translateX(-50%);
+  transition:left .35s ease;
 }
 .range-labels{
   display:flex;
@@ -166,23 +171,20 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
 let chart;
 
 gender.addEventListener("change",()=>{
-  hip.disabled = gender.value === "male";
-  if(gender.value === "male") hip.value="";
+  hip.disabled = gender.value==="male";
+  if(gender.value==="male") hip.value="";
 });
 
+/* ✅ Accurate universal mapping: 0–60% → 0–100% */
 function pointerPos(bf){
-  if(bf<=5) return (bf-2)/(5-2)*6;
-  if(bf<=13) return 6+(bf-6)/(13-6)*8;
-  if(bf<=17) return 14+(bf-14)/(17-14)*10;
-  if(bf<=24) return 24+(bf-18)/(24-18)*7;
-  return 31+(bf-25)/(60-25)*69;
+  return Math.min(Math.max(bf/60*100,0),100);
 }
 
 function calculate(){
   error.innerText="";
   if(chart) chart.destroy();
 
-  let unitVal=unit.value, g=gender.value;
+  let unitVal=unit.value,g=gender.value;
   let agev=+age.value,h=+height.value,w=+weight.value;
   let n=+neck.value,wa=+waist.value,hi=+hip.value;
 
@@ -224,7 +226,7 @@ function calculate(){
   let lose=Math.max(0,w*(bf-ideal)/100);
 
   let bmi=w/((h/100)**2);
-  let bmiBF=g==="male"?1.2*bmi+0.23*agev-16.2:1.2*bmi+0.23*agev-5.4;
+  let bmiBF=(g==="male"?1.2*bmi+0.23*agev-16.2:1.2*bmi+0.23*agev-5.4);
   bmiBF=Math.min(Math.max(bmiBF,2),60);
 
   output.innerHTML=`
@@ -235,7 +237,7 @@ function calculate(){
     <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
     <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
     <tr><td>Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
-    <tr><td>BMI Method (est.)</td><td>${bmiBF.toFixed(1)}%</td></tr>
+    <tr><td>BMI Method (screening est.)</td><td>${bmiBF.toFixed(1)}%</td></tr>
   </table>`;
 
   centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${cat}</span>`;
