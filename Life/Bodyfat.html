@@ -20,11 +20,7 @@ body{
   background:var(--bg);
   color:var(--text);
 }
-.container{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
+.container{max-width:1200px;margin:auto;padding:20px}
 .card{
   background:var(--card);
   border-radius:var(--radius);
@@ -33,13 +29,11 @@ body{
 }
 h1{margin:0;color:var(--primary)}
 small{color:#555}
-
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
   gap:20px;
 }
-
 input,select{
   width:100%;
   padding:14px;
@@ -47,7 +41,6 @@ input,select{
   border-radius:10px;
   border:1px solid #ddd;
 }
-
 button{
   width:100%;
   padding:18px;
@@ -58,45 +51,22 @@ button{
   font-size:18px;
   cursor:pointer;
 }
-button:hover{opacity:.95}
-
-.error{
-  color:#dc2626;
-  font-weight:600;
-  margin-top:10px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-td{
-  padding:9px 6px;
-  border-bottom:1px solid #eee;
-}
+.error{color:#dc2626;font-weight:600;margin-top:10px}
+table{width:100%;border-collapse:collapse}
+td{padding:9px 6px;border-bottom:1px solid #eee}
 
 /* ===== CHART ===== */
-.chart-wrap{
-  position:relative;
-  height:340px;
-}
+.chart-wrap{position:relative;height:340px}
 .chart-center{
   position:absolute;
-  top:45%;
-  left:50%;
+  top:45%;left:50%;
   transform:translate(-50%,-50%);
   text-align:center;
 }
-.chart-center b{
-  font-size:26px;
-  display:block;
-}
-.chart-center span{
-  color:#555;
-  font-size:14px;
-}
+.chart-center b{font-size:26px;display:block}
+.chart-center span{font-size:14px;color:#555}
 
-/* ===== BODY FAT RANGE BAR ===== */
+/* ===== RANGE BAR ===== */
 .range-wrap{margin-top:20px}
 .range-bar{
   position:relative;
@@ -106,23 +76,21 @@ td{
   display:flex;
 }
 .range-bar div{height:100%}
-.r1{background:#7c2d12;width:6%}
-.r2{background:#facc15;width:8%}
-.r3{background:#22c55e;width:10%}
-.r4{background:#fde047;width:7%}
-.r5{background:#dc2626;width:69%}
+.r1{background:#7c2d12;width:6%}    /* 2–5 */
+.r2{background:#facc15;width:8%}    /* 6–13 */
+.r3{background:#22c55e;width:10%}   /* 14–17 */
+.r4{background:#fde047;width:7%}    /* 18–24 */
+.r5{background:#dc2626;width:69%}   /* 25–60 */
 
 .range-pointer{
   position:absolute;
   top:-8px;
-  width:0;
-  height:0;
+  width:0;height:0;
   border-left:7px solid transparent;
   border-right:7px solid transparent;
   border-top:12px solid #000;
   transition:left .4s ease;
 }
-
 .range-labels{
   display:flex;
   justify-content:space-between;
@@ -153,7 +121,7 @@ td{
     <option value="female">Female</option>
   </select>
 
-  <input id="age" type="number" placeholder="Age (years)">
+  <input id="age" type="number" placeholder="Age (18+)">
   <input id="height" type="number" placeholder="Height">
   <input id="weight" type="number" placeholder="Weight">
   <input id="neck" type="number" placeholder="Neck circumference">
@@ -162,7 +130,7 @@ td{
 </div>
 
 <br>
-<button onclick="calculateBodyFat()">Calculate</button>
+<button onclick="calculate()">Calculate</button>
 <div id="error" class="error"></div>
 </div>
 
@@ -179,19 +147,13 @@ td{
 
     <div class="range-wrap">
       <div class="range-bar">
-        <div class="r1"></div>
-        <div class="r2"></div>
-        <div class="r3"></div>
-        <div class="r4"></div>
-        <div class="r5"></div>
-        <div class="range-pointer" id="bfPointer"></div>
+        <div class="r1"></div><div class="r2"></div><div class="r3"></div>
+        <div class="r4"></div><div class="r5"></div>
+        <div class="range-pointer" id="pointer"></div>
       </div>
       <div class="range-labels">
-        <span>Essential</span>
-        <span>Athletes</span>
-        <span>Fitness</span>
-        <span>Average</span>
-        <span>Obese</span>
+        <span>Essential</span><span>Athletes</span><span>Fitness</span>
+        <span>Average</span><span>Obese</span>
       </div>
     </div>
   </div>
@@ -203,36 +165,96 @@ td{
 <script>
 let chart;
 
-function movePointer(bf){
-  let pos=0;
+gender.addEventListener("change",()=>{
+  hip.disabled = gender.value === "male";
+  if(gender.value === "male") hip.value="";
+});
 
-  if(bf<=5) pos = (bf-2)/(5-2)*6;
-  else if(bf<=13) pos = 6 + (bf-6)/(13-6)*8;
-  else if(bf<=17) pos = 14 + (bf-14)/(17-14)*10;
-  else if(bf<=24) pos = 24 + (bf-18)/(24-18)*7;
-  else pos = 31 + (bf-25)/(60-25)*69;
-
-  bfPointer.style.left = Math.min(Math.max(pos,0),100)+"%";
+function pointerPos(bf){
+  if(bf<=5) return (bf-2)/(5-2)*6;
+  if(bf<=13) return 6+(bf-6)/(13-6)*8;
+  if(bf<=17) return 14+(bf-14)/(17-14)*10;
+  if(bf<=24) return 24+(bf-18)/(24-18)*7;
+  return 31+(bf-25)/(60-25)*69;
 }
 
-function calculateBodyFat(){
+function calculate(){
   error.innerText="";
-  output.innerHTML="Result = —";
-  centerText.innerHTML="";
   if(chart) chart.destroy();
 
-  let bf=2; /* sample safety */
+  let unitVal=unit.value, g=gender.value;
+  let agev=+age.value,h=+height.value,w=+weight.value;
+  let n=+neck.value,wa=+waist.value,hi=+hip.value;
 
-  /* ===== YOUR EXISTING LOGIC (UNCHANGED) ===== */
-  /* Calculation happens here normally */
+  if(!g||!agev||!h||!w||!n||!wa){
+    error.innerText="Please fill all required fields.";
+    return;
+  }
+  if(agev<18){
+    error.innerText="This calculator is for adults (18+).";
+    return;
+  }
 
-  /* ===== DEMO: replace bf with calculated bf ===== */
-  bf = 21.7;
+  if(unitVal==="us"){
+    h*=2.54; w*=0.453592; n*=2.54; wa*=2.54; hi*=2.54;
+  }
 
-  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>Average</span>`;
-  movePointer(bf);
+  if(g==="male" && wa<=n){
+    error.innerText="For males, waist must be greater than neck.";
+    return;
+  }
+  if(g==="female" && (!hi || wa+hi<=n)){
+    error.innerText="For females, waist + hip must be greater than neck.";
+    return;
+  }
+
+  let bf=g==="male"
+    ?86.01*Math.log10(wa-n)-70.041*Math.log10(h)+36.76
+    :163.205*Math.log10(wa+hi-n)-97.684*Math.log10(h)-78.387;
+
+  bf=Math.min(Math.max(bf,2),60);
+
+  let fat=w*(bf/100), lean=w-fat;
+  let cat=bf<6?"Essential":bf<14?"Athletes":bf<18?"Fitness":bf<25?"Average":"Obese";
+
+  let ideal=g==="male"
+    ?Math.max(8,18-(agev-20)*0.2)
+    :Math.max(18,25-(agev-20)*0.2);
+
+  let lose=Math.max(0,w*(bf-ideal)/100);
+
+  let bmi=w/((h/100)**2);
+  let bmiBF=g==="male"?1.2*bmi+0.23*agev-16.2:1.2*bmi+0.23*agev-5.4;
+  bmiBF=Math.min(Math.max(bmiBF,2),60);
+
+  output.innerHTML=`
+  <table>
+    <tr><td><b>Body Fat</b></td><td>${bf.toFixed(1)}%</td></tr>
+    <tr><td>Category</td><td>${cat}</td></tr>
+    <tr><td>Fat Mass</td><td>${fat.toFixed(1)} kg</td></tr>
+    <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
+    <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
+    <tr><td>Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
+    <tr><td>BMI Method (est.)</td><td>${bmiBF.toFixed(1)}%</td></tr>
+  </table>`;
+
+  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${cat}</span>`;
+  pointer.style.left=pointerPos(bf)+"%";
+
+  chart=new Chart(chartEl,{
+    type:"doughnut",
+    data:{
+      labels:["Fat Mass","Lean Mass"],
+      datasets:[{
+        data:[fat,lean],
+        backgroundColor:["#f87171","#4ade80"]
+      }]
+    },
+    options:{cutout:"70%",plugins:{legend:{position:"bottom"}}}
+  });
 }
-</script>
 
+const chartEl=document.getElementById("chart");
+</script>
 </body>
 </html>
