@@ -58,8 +58,20 @@ button{
 table{width:100%;border-collapse:collapse}
 td{padding:8px 6px;border-bottom:1px solid #eee}
 
-/* Chart */
-.chart-wrap{position:relative;height:300px}
+/* ===== PERFECT CHART FIX ===== */
+.chart-box{
+  max-width:360px;
+  margin:auto;
+}
+.chart-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1; /* 🔥 KEY FIX */
+}
+.chart-wrap canvas{
+  width:100% !important;
+  height:100% !important;
+}
 .chart-center{
   position:absolute;
   inset:0;
@@ -67,9 +79,16 @@ td{padding:8px 6px;border-bottom:1px solid #eee}
   align-items:center;
   justify-content:center;
   flex-direction:column;
+  text-align:center;
+  pointer-events:none;
 }
-.chart-center b{font-size:26px}
-.chart-center span{font-size:14px;color:var(--muted)}
+.chart-center b{
+  font-size:26px;
+}
+.chart-center span{
+  font-size:14px;
+  color:var(--muted);
+}
 
 /* Insight box */
 .insight{
@@ -126,9 +145,11 @@ td{padding:8px 6px;border-bottom:1px solid #eee}
   </div>
 
   <div class="card">
-    <div class="chart-wrap">
-      <canvas id="chart"></canvas>
-      <div class="chart-center" id="centerText"></div>
+    <div class="chart-box">
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+        <div class="chart-center" id="centerText"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -199,8 +220,7 @@ function calculate(){
   let bmiBF=(g==="male"
     ?1.2*bmi+0.23*agev-16.2
     :1.2*bmi+0.23*agev-5.4);
-
-  bmiBF=Math.max(bmiBF,5); // prevent misleading extremes
+  bmiBF=Math.max(bmiBF,5);
 
   output.innerHTML=`
   <table>
@@ -215,10 +235,10 @@ function calculate(){
 
   centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${category}</span>`;
 
-  insight.innerHTML = `
+  insight.innerHTML=`
     <strong>How to understand this:</strong><br>
-    This body fat estimate is calculated using the U.S. Navy method, which is widely used for fitness and health screening.
-    ${bf<5 ? "<br><br><strong>Note:</strong> Values below 5% are extremely lean and uncommon in the general population." : ""}
+    This body fat estimate uses the U.S. Navy method for health and fitness screening.
+    ${bf<5?'<br><br><strong>Note:</strong> Values below 5% are extremely lean and uncommon.':''}
   `;
 
   chart=new Chart(chartEl,{
@@ -230,7 +250,12 @@ function calculate(){
         backgroundColor:["#f87171","#4ade80"]
       }]
     },
-    options:{cutout:"70%",plugins:{legend:{position:"bottom"}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:"72%",
+      plugins:{legend:{position:"bottom"}}
+    }
   });
 }
 
