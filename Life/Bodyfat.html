@@ -58,19 +58,16 @@ button{
 table{width:100%;border-collapse:collapse}
 td{padding:8px 6px;border-bottom:1px solid #eee}
 
-/* ===== PERFECT CHART FIX ===== */
-.chart-box{
-  max-width:360px;
-  margin:auto;
-}
+/* ===== PERFECT CHART ===== */
+.chart-box{max-width:360px;margin:auto}
 .chart-wrap{
   position:relative;
   width:100%;
-  aspect-ratio:1/1; /* 🔥 KEY FIX */
+  aspect-ratio:1/1;
 }
 .chart-wrap canvas{
-  width:100% !important;
-  height:100% !important;
+  width:100%!important;
+  height:100%!important;
 }
 .chart-center{
   position:absolute;
@@ -82,15 +79,9 @@ td{padding:8px 6px;border-bottom:1px solid #eee}
   text-align:center;
   pointer-events:none;
 }
-.chart-center b{
-  font-size:26px;
-}
-.chart-center span{
-  font-size:14px;
-  color:var(--muted);
-}
+.chart-center b{font-size:26px}
+.chart-center span{font-size:14px;color:var(--muted)}
 
-/* Insight box */
 .insight{
   margin-top:18px;
   padding:16px;
@@ -124,8 +115,8 @@ td{padding:8px 6px;border-bottom:1px solid #eee}
   </select>
 
   <input id="age" type="number" placeholder="Age (18+)">
-  <input id="height" type="number" placeholder="Height">
-  <input id="weight" type="number" placeholder="Weight">
+  <input id="height" type="number" placeholder="Height (cm / in)">
+  <input id="weight" type="number" placeholder="Weight (kg / lb)">
   <input id="neck" type="number" placeholder="Neck circumference">
   <input id="waist" type="number" placeholder="Waist circumference">
   <input id="hip" type="number" placeholder="Hip (female only)">
@@ -178,7 +169,7 @@ function calculate(){
     return;
   }
   if(agev<18){
-    error.innerText="This calculator is for adults (18+).";
+    error.innerText="This calculator is intended for adults (18+).";
     return;
   }
 
@@ -204,11 +195,11 @@ function calculate(){
   let fat=w*(bf/100), lean=w-fat;
 
   let category =
-    bf<6?"Essential fat (very lean)":
-    bf<14?"Athletic":
-    bf<18?"Fit":
-    bf<25?"Average":
-    "High body fat";
+    bf<6?"Very lean":
+    bf<14?"Athletic range":
+    bf<18?"Fitness range":
+    bf<25?"Average range":
+    "Above recommended range";
 
   let ideal = g==="male"
     ?Math.max(8,18-(agev-20)*0.2)
@@ -220,7 +211,7 @@ function calculate(){
   let bmiBF=(g==="male"
     ?1.2*bmi+0.23*agev-16.2
     :1.2*bmi+0.23*agev-5.4);
-  bmiBF=Math.max(bmiBF,5);
+  bmiBF=Math.min(Math.max(bmiBF,8),40);
 
   output.innerHTML=`
   <table>
@@ -229,16 +220,18 @@ function calculate(){
     <tr><td>Fat Mass</td><td>${fat.toFixed(1)} kg</td></tr>
     <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
     <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
-    <tr><td>Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
-    <tr><td>BMI Method (screening)</td><td>${bmiBF.toFixed(1)}%</td></tr>
+    <tr><td>Estimated Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
+    <tr><td>BMI-based estimate</td><td>${bmiBF.toFixed(1)}%</td></tr>
   </table>`;
 
   centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${category}</span>`;
 
   insight.innerHTML=`
     <strong>How to understand this:</strong><br>
-    This body fat estimate uses the U.S. Navy method for health and fitness screening.
-    ${bf<5?'<br><br><strong>Note:</strong> Values below 5% are extremely lean and uncommon.':''}
+    This estimate uses the U.S. Navy body fat method, commonly used for fitness and health screening.
+    <br><br>
+    <strong>Note:</strong> Fat-loss estimates assume lean mass is preserved. Actual results depend on diet, training, and health factors.
+    ${bf<5?'<br><br><strong>Important:</strong> Values below 5% are extremely lean and uncommon in the general population.':''}
   `;
 
   chart=new Chart(chartEl,{
