@@ -1,10 +1,8 @@
-</body>
-</html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Body Fat Calculator – Professional</title>
+<title>Body Fat Calculator – Professional & Accurate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -14,6 +12,7 @@
   --card:#ffffff;
   --radius:16px;
   --text:#1f2937;
+  --muted:#6b7280;
 }
 *{box-sizing:border-box}
 body{
@@ -26,11 +25,12 @@ body{
 .card{
   background:var(--card);
   border-radius:var(--radius);
-  padding:30px;
+  padding:28px;
   box-shadow:0 14px 36px rgba(0,0,0,.08);
 }
 h1{margin:0;color:var(--primary)}
-small{color:#555}
+small{color:var(--muted)}
+
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -54,11 +54,12 @@ button{
   cursor:pointer;
 }
 .error{color:#dc2626;font-weight:600;margin-top:10px}
-table{width:100%;border-collapse:collapse}
-td{padding:9px 6px;border-bottom:1px solid #eee}
 
-/* ===== CHART ===== */
-.chart-wrap{position:relative;height:340px}
+table{width:100%;border-collapse:collapse}
+td{padding:8px 6px;border-bottom:1px solid #eee}
+
+/* Chart */
+.chart-wrap{position:relative;height:300px}
 .chart-center{
   position:absolute;
   inset:0;
@@ -68,41 +69,18 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
   flex-direction:column;
 }
 .chart-center b{font-size:26px}
-.chart-center span{font-size:14px;color:#555}
+.chart-center span{font-size:14px;color:var(--muted)}
 
-/* ===== RANGE BAR ===== */
-.range-wrap{margin-top:20px}
-.range-bar{
-  position:relative;
-  height:14px;
-  border-radius:8px;
-  overflow:hidden;
-  display:flex;
+/* Insight box */
+.insight{
+  margin-top:18px;
+  padding:16px;
+  border-radius:12px;
+  background:#f1f5f9;
+  font-size:14px;
+  line-height:1.6;
 }
-.range-bar div{height:100%}
-.r1{background:#7c2d12;width:6%}
-.r2{background:#facc15;width:8%}
-.r3{background:#22c55e;width:10%}
-.r4{background:#fde047;width:7%}
-.r5{background:#dc2626;width:69%}
-
-.range-pointer{
-  position:absolute;
-  top:-8px;
-  width:0;height:0;
-  border-left:7px solid transparent;
-  border-right:7px solid transparent;
-  border-top:12px solid #000;
-  transform:translateX(-50%);
-  transition:left .35s ease;
-}
-.range-labels{
-  display:flex;
-  justify-content:space-between;
-  font-size:12px;
-  margin-top:6px;
-  color:#555;
-}
+.insight strong{color:#111}
 </style>
 </head>
 
@@ -111,7 +89,7 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
 
 <div class="card">
 <h1>Body Fat Calculator</h1>
-<small>U.S. Navy Method · Medical-grade accuracy · US & Metric units</small>
+<small>U.S. Navy Method · Medical-grade accuracy · Metric & US units</small>
 <br><br>
 
 <div class="grid">
@@ -142,24 +120,15 @@ td{padding:9px 6px;border-bottom:1px solid #eee}
 <br>
 
 <div class="grid">
-  <div class="card"><div id="output">Result = —</div></div>
+  <div class="card">
+    <div id="output">Result = —</div>
+    <div id="insight" class="insight"></div>
+  </div>
 
   <div class="card">
     <div class="chart-wrap">
       <canvas id="chart"></canvas>
       <div class="chart-center" id="centerText"></div>
-    </div>
-
-    <div class="range-wrap">
-      <div class="range-bar">
-        <div class="r1"></div><div class="r2"></div><div class="r3"></div>
-        <div class="r4"></div><div class="r5"></div>
-        <div class="range-pointer" id="pointer"></div>
-      </div>
-      <div class="range-labels">
-        <span>Essential</span><span>Athletes</span><span>Fitness</span>
-        <span>Average</span><span>Obese</span>
-      </div>
     </div>
   </div>
 </div>
@@ -175,18 +144,13 @@ gender.addEventListener("change",()=>{
   if(gender.value==="male") hip.value="";
 });
 
-/* ✅ Accurate universal mapping: 0–60% → 0–100% */
-function pointerPos(bf){
-  return Math.min(Math.max(bf/60*100,0),100);
-}
-
 function calculate(){
   error.innerText="";
   if(chart) chart.destroy();
 
-  let unitVal=unit.value,g=gender.value;
-  let agev=+age.value,h=+height.value,w=+weight.value;
-  let n=+neck.value,wa=+waist.value,hi=+hip.value;
+  let unitVal=unit.value, g=gender.value;
+  let agev=+age.value, h=+height.value, w=+weight.value;
+  let n=+neck.value, wa=+waist.value, hi=+hip.value;
 
   if(!g||!agev||!h||!w||!n||!wa){
     error.innerText="Please fill all required fields.";
@@ -202,46 +166,60 @@ function calculate(){
   }
 
   if(g==="male" && wa<=n){
-    error.innerText="For males, waist must be greater than neck.";
+    error.innerText="Waist must be greater than neck.";
     return;
   }
   if(g==="female" && (!hi || wa+hi<=n)){
-    error.innerText="For females, waist + hip must be greater than neck.";
+    error.innerText="Waist + hip must be greater than neck.";
     return;
   }
 
-  let bf=g==="male"
+  let bf = g==="male"
     ?86.01*Math.log10(wa-n)-70.041*Math.log10(h)+36.76
     :163.205*Math.log10(wa+hi-n)-97.684*Math.log10(h)-78.387;
 
   bf=Math.min(Math.max(bf,2),60);
 
   let fat=w*(bf/100), lean=w-fat;
-  let cat=bf<6?"Essential":bf<14?"Athletes":bf<18?"Fitness":bf<25?"Average":"Obese";
 
-  let ideal=g==="male"
+  let category =
+    bf<6?"Essential fat (very lean)":
+    bf<14?"Athletic":
+    bf<18?"Fit":
+    bf<25?"Average":
+    "High body fat";
+
+  let ideal = g==="male"
     ?Math.max(8,18-(agev-20)*0.2)
     :Math.max(18,25-(agev-20)*0.2);
 
   let lose=Math.max(0,w*(bf-ideal)/100);
 
   let bmi=w/((h/100)**2);
-  let bmiBF=(g==="male"?1.2*bmi+0.23*agev-16.2:1.2*bmi+0.23*agev-5.4);
-  bmiBF=Math.min(Math.max(bmiBF,2),60);
+  let bmiBF=(g==="male"
+    ?1.2*bmi+0.23*agev-16.2
+    :1.2*bmi+0.23*agev-5.4);
+
+  bmiBF=Math.max(bmiBF,5); // prevent misleading extremes
 
   output.innerHTML=`
   <table>
     <tr><td><b>Body Fat</b></td><td>${bf.toFixed(1)}%</td></tr>
-    <tr><td>Category</td><td>${cat}</td></tr>
+    <tr><td>Category</td><td>${category}</td></tr>
     <tr><td>Fat Mass</td><td>${fat.toFixed(1)} kg</td></tr>
     <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
     <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
     <tr><td>Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
-    <tr><td>BMI Method (screening est.)</td><td>${bmiBF.toFixed(1)}%</td></tr>
+    <tr><td>BMI Method (screening)</td><td>${bmiBF.toFixed(1)}%</td></tr>
   </table>`;
 
-  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${cat}</span>`;
-  pointer.style.left=pointerPos(bf)+"%";
+  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${category}</span>`;
+
+  insight.innerHTML = `
+    <strong>How to understand this:</strong><br>
+    This body fat estimate is calculated using the U.S. Navy method, which is widely used for fitness and health screening.
+    ${bf<5 ? "<br><br><strong>Note:</strong> Values below 5% are extremely lean and uncommon in the general population." : ""}
+  `;
 
   chart=new Chart(chartEl,{
     type:"doughnut",
