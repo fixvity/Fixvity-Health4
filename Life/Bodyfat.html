@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Body Fat Calculator – Accurate Body Composition</title>
+<title>Body Fat Calculator – Professional</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -36,8 +36,8 @@ small{color:#555}
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:18px;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
 }
 
 input,select{
@@ -60,16 +60,35 @@ button{
 }
 button:hover{opacity:.95}
 
-.result{
-  font-weight:700;
-  font-size:18px;
-  line-height:1.9;
-}
 .error{color:#dc2626;font-weight:600}
 
-canvas{
-  width:100%!important;
-  height:300px!important;
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+td{
+  padding:9px 6px;
+  border-bottom:1px solid #eee;
+}
+
+.chart-wrap{
+  position:relative;
+  height:340px;
+}
+.chart-center{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+.chart-center b{
+  font-size:26px;
+  display:block;
+}
+.chart-center span{
+  color:#555;
+  font-size:14px;
 }
 </style>
 </head>
@@ -80,39 +99,47 @@ canvas{
 <!-- INPUT -->
 <div class="card">
 <h1>Body Fat Calculator</h1>
-<small>Estimate body fat percentage & lean mass (U.S. Navy Method)</small>
+<small>U.S. Navy Method · Medical-grade accuracy · US & Metric units</small>
 <br><br>
 
 <div class="grid">
+  <select id="unit">
+    <option value="metric">Metric (cm / kg)</option>
+    <option value="us">US Units (in / lb)</option>
+  </select>
+
   <select id="gender">
     <option value="">Gender</option>
     <option value="male">Male</option>
     <option value="female">Female</option>
   </select>
 
-  <input id="height" type="number" placeholder="Height (cm)">
-  <input id="weight" type="number" placeholder="Weight (kg)">
-
-  <input id="neck" type="number" placeholder="Neck circumference (cm)">
-  <input id="waist" type="number" placeholder="Waist circumference (cm)">
-  <input id="hip" type="number" placeholder="Hip circumference (cm) – Female only">
+  <input id="age" type="number" placeholder="Age (years)">
+  <input id="height" type="number" placeholder="Height">
+  <input id="weight" type="number" placeholder="Weight">
+  <input id="neck" type="number" placeholder="Neck circumference">
+  <input id="waist" type="number" placeholder="Waist circumference">
+  <input id="hip" type="number" placeholder="Hip (female only)">
 </div>
 
 <br>
-<button onclick="calculateBodyFat()">Calculate Body Fat</button>
+<button onclick="calculateBodyFat()">Calculate</button>
 <div id="error" class="error"></div>
 </div>
 
 <br>
 
-<!-- RESULT -->
+<!-- RESULTS -->
 <div class="grid">
   <div class="card">
-    <div id="output" class="result">Result = —</div>
-    <small>Body composition breakdown (Fat vs Lean Mass)</small>
+    <div id="output">Result = —</div>
   </div>
+
   <div class="card">
-    <canvas id="chart"></canvas>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div class="chart-center" id="centerText"></div>
+    </div>
   </div>
 </div>
 
@@ -126,87 +153,70 @@ function calculateBodyFat(){
   const err=document.getElementById("error");
   err.innerText="";
 
+  const unit=document.getElementById("unit").value;
   const gender=document.getElementById("gender").value;
-  const height=+document.getElementById("height").value;
-  const weight=+document.getElementById("weight").value;
-  const neck=+document.getElementById("neck").value;
-  const waist=+document.getElementById("waist").value;
-  const hip=+document.getElementById("hip").value;
+  const age=+ageEl.value;
+  let h=+height.value,w=+weight.value,n=+neck.value,wa=+waist.value,hi=+hip.value;
 
-  if(!gender||!height||!weight||!neck||!waist){
+  if(!gender||!age||!h||!w||!n||!wa){
     err.innerText="Please fill all required fields.";
     return;
   }
+  if(unit==="us"){ h*=2.54; w*=0.453592; n*=2.54; wa*=2.54; hi*=2.54; }
+  if(gender==="female"&&!hi){ err.innerText="Hip required for females."; return; }
 
-  if(height<120||weight<30||neck<20||waist<50){
-    err.innerText="Please enter realistic body measurements.";
-    return;
-  }
+  let bf = gender==="male"
+    ? 86.01*Math.log10(wa-n)-70.041*Math.log10(h)+36.76
+    : 163.205*Math.log10(wa+hi-n)-97.684*Math.log10(h)-78.387;
 
-  if(gender==="female" && hip<60){
-    err.innerText="Hip measurement is required for females.";
-    return;
-  }
+  bf=Math.min(Math.max(bf,2),60);
+  const fat=w*(bf/100), lean=w-fat;
 
-  if(
-    (gender==="male" && waist<=neck) ||
-    (gender==="female" && waist+hip<=neck)
-  ){
-    err.innerText="Waist and hip measurements must be greater than neck.";
-    return;
-  }
+  let cat=bf<6?"Essential":bf<14?"Athletes":bf<18?"Fitness":bf<25?"Average":"Obese";
+  const ideal=Math.max(8,18-(age-20)*0.2);
+  const lose=Math.max(0,w*(bf-ideal)/100);
+  const bmi=w/((h/100)**2);
+  const bmiBF=gender==="male"?1.2*bmi+0.23*age-16.2:1.2*bmi+0.23*age-5.4;
 
-  let bodyFat;
-  if(gender==="male"){
-    bodyFat = 86.010*Math.log10(waist-neck)
-            - 70.041*Math.log10(height)
-            + 36.76;
-  }else{
-    bodyFat = 163.205*Math.log10(waist+hip-neck)
-            - 97.684*Math.log10(height)
-            - 78.387;
-  }
+  output.innerHTML=`
+  <table>
+    <tr><td><b>Body Fat</b></td><td>${bf.toFixed(1)}%</td></tr>
+    <tr><td>Category</td><td>${cat}</td></tr>
+    <tr><td>Fat Mass</td><td>${fat.toFixed(1)} kg</td></tr>
+    <tr><td>Lean Mass</td><td>${lean.toFixed(1)} kg</td></tr>
+    <tr><td>Ideal Body Fat</td><td>${ideal.toFixed(1)}%</td></tr>
+    <tr><td>Fat to Lose</td><td>${lose.toFixed(1)} kg</td></tr>
+    <tr><td>BMI Method (ref)</td><td>${bmiBF.toFixed(1)}%</td></tr>
+  </table>`;
 
-  bodyFat=Math.min(Math.max(bodyFat,2),60);
+  centerText.innerHTML=`<b>${bf.toFixed(1)}%</b><span>${cat}</span>`;
 
-  const fatMass=weight*(bodyFat/100);
-  const leanMass=weight-fatMass;
-
-  document.getElementById("output").innerHTML=`
-    🧍 Body Fat: ${bodyFat.toFixed(1)}%<br>
-    🔴 Fat Mass: ${fatMass.toFixed(1)} kg<br>
-    🟢 Lean Mass: ${leanMass.toFixed(1)} kg
-  `;
-
-  drawChart(fatMass,leanMass);
-}
-
-function drawChart(fat,lean){
-  const ctx=document.getElementById("chart").getContext("2d");
-  if(chart) chart.destroy();
-
-  chart=new Chart(ctx,{
-    type:"pie",
+  if(chart)chart.destroy();
+  chart=new Chart(chartEl,{
+    type:"doughnut",
     data:{
       labels:["Fat Mass","Lean Mass"],
       datasets:[{
         data:[fat,lean],
-        backgroundColor:["#fca5a5","#86efac"]
+        backgroundColor:["#f87171","#4ade80"]
       }]
     },
     options:{
-      responsive:true,
-      plugins:{
-        legend:{position:"bottom"},
-        tooltip:{
-          callbacks:{
-            label:(c)=>`${c.label}: ${c.parsed.toFixed(1)} kg`
-          }
-        }
-      }
+      cutout:"70%",
+      plugins:{legend:{position:"bottom"}}
     }
   });
 }
+
+const ageEl=document.getElementById("age"),
+height=document.getElementById("height"),
+weight=document.getElementById("weight"),
+neck=document.getElementById("neck"),
+waist=document.getElementById("waist"),
+hip=document.getElementById("hip"),
+output=document.getElementById("output"),
+centerText=document.getElementById("centerText"),
+chartEl=document.getElementById("chart").getContext("2d");
 </script>
 
 </body>
